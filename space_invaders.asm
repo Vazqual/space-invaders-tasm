@@ -2,109 +2,48 @@
 ; Maria Aclice Ferreira Pereira             -- RA21249
 ; Maria Julia Hofstetter Trevisan Pereira   -- RA21250
 ; Informatica -- Cotuca -- 06/06/2023
-.MODEL small
-.STACK 100h
-.DATA
+
+STACK SEGMENT PARA STACK
+    DB 64 DUP (' ')
+STACK ENDS
+
+DATA SEGMENT PARA 'DATA'
+    naveX dw 0Ah
+    naveY dw 0Ah
+    
     msg db "DP Invaders!", 13, 10, '$'
+    vidas db "VIDAS: ", 13, 10, '$'
+    pontos db "PONTOS: ", 13, 10, '$'
+    vidasNum db 3, '$'
+DATA ENDS
 
 
+CODE SEGMENT PARA 'CODE'
+    MAIN PROC FAR
+    ASSUME CS:CODE,DS:DATA,SS:STACK     ; assume code, data and stack segments to respective registers 
+    PUSH DS                             ; push to the stack the DS segment
+    SUB ax, ax                          ; clean ax register
+    PUSH ax                             ; push to the stack the ax register
+    mov ax, DATA                        ; save the contents of DATA segment to on ax register
+    mov ds, ax 
+    pop ax                              ; release top item from the stack and save it on ax register
+    pop ax                              ; release top item from the stack and save it on ax register
 
-.CODE
+        mov ah, 00h ; set video mode
+        mov al, 13h ; 320x200 screen 
+        int 10h     ; execute configuration
 
-right PROC
-    mov ah, 0ch
-    inc cx
-    inc dx
-    mov al, 56
-
-    
-
-    ret
-right ENDP
-
-
-INICIO:
-    ;set video mode
-    ; 320x200 screen 
-    mov ah, 00h
-    mov al, 13h
-
-    int 10h
-
-    ;write pixels on screen
-    mov ah, 0ch
-
-    ; mov cx, 160 ; x = 160
-    ; mov dx, 100 ; y = 100
-    ; mov al, 56  ; color purple 
-    ; int 10h
-
-    mov cx, 0
-    mov dx, 0
-    borderLR: 
-        mov al, 56
-        int 10h
-        inc cx
-        cmp cx, 319
-        jne borderLR
-
-    borderTB:
-        mov al, 56
-        int 10h
-        inc dx
-        cmp dx, 199
-        jne borderTB
-
-    borderRL:
-        mov al, 56
-        int 10h
-        dec cx
-        cmp cx, 0
-        jne borderRL
-
-    borderBT:
-        mov al, 56
-        int 10h
-        dec dx
-        cmp dx, 0
-        jne borderBT
-
-
-    square:
-        mov cx, 160
-        mov dx, 100
-        mov al, 56
+        ;write pixels on screen
+        mov ah, 0ch
+        mov bh, 00h
+        mov cx, naveX ; x = 160
+        mov dx, naveY ; y = 100
+        mov al, 56  ; color purple 
         int 10h
 
-        mov cx, 161
-        mov dx, 100
-        mov al, 56
-        int 10h
+        ret
+    MAIN ENDP
 
-        mov cx, 160
-        mov dx, 101
-        mov al, 56
-        int 10h
-
-        mov cx, 161
-        mov dx, 101
-        mov al, 56
-        int 10h
-
-    
-
-    ;write text on screen
-    mov ah, 00h 
-    int 16h
-
-    ;set video mode
-    mov ah, 00
-    mov al, 03h
-    int 10h
-
-    mov al, 0
-    mov ah, 4ch
-    int 21h
-
-    
-end inicio
+CODE ENDS
+END MAIN
+```
