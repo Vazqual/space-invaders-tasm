@@ -15,8 +15,8 @@ DATA SEGMENT PARA 'DATA'
     shipX dw 160    ; ship position on X axis
     shipY dw 150    ; ship position on Y axis
     shipH dw 5      ; ship height
-    shipW dw 15      ; ship width
-    
+    shipW dw 15     ; ship width
+    shipVel dw 4h   ; ship velocity
     
     
     msg db "DP Invaders!", 13, 10, '$'
@@ -39,29 +39,24 @@ CODE SEGMENT PARA 'CODE'
     pop ax                              ; release top item from the stack and save it on ax register
     pop ax                              ; release top item from the stack and save it on ax register
 
-        mov ah, 00h         ; set video mode
-        mov al, 13h         ; 320x200 screen 
-        int 10h             ; execute configuration
-
-        ;write pixels on screen
-        mov ah, 0ch
-        mov al, 56  ; color purple 
-        mov bh, 00h
-        int 10h
-
+        call CLEAR_SCREEN
         call DRAW_UI
 
 
         check_time:
             mov ah, 2Ch     ; get system time
-            int 21h     ; ch = hour, cl = minutes, dh = seconds, dl = centiseconds
+            int 21h         ; ch = hour, cl = minutes, dh = seconds, dl = centiseconds
 
             cmp dl, time_aux
             je check_time
             mov time_aux, dl
+
+            call MOVE_BALL
+            call CLEAR_SCREEN
+            call DRAW_UI
             call DRAW_SHIP
 
-            
+            jmp check_time
         ret
     MAIN ENDP
 
@@ -142,30 +137,29 @@ CODE SEGMENT PARA 'CODE'
         ret
     DRAW_UI ENDP
 
+
+    CLEAR_SCREEN PROC NEAR
+        mov ah, 00h         ; set video mode
+        mov al, 13h         ; 320x200 screen 
+        int 10h             ; execute configuration
+        mov ah, 0ch
+        mov al, 56  ; color purple 
+        mov bh, 00h
+        mov bl, 00h
+        int 10h
+        ret
+    CLEAR_SCREEN ENDP
+
+
+    MOVE_BALL PROC NEAR
+        mov ax, shipVel
+        add shipX, ax
+        mov ax, shipVel
+        add shipY, ax
+        ret
+    MOVE_BALL ENDP
+
 CODE ENDS
 END MAIN
 ```
 
-
-        ; mov al, 56  ; color purple 
-        ; mov cx, shipX
-        ; mov dx, shipY
-        ; mov al, 60
-        ; int 10h
-        ; mov al, 56
-        ; inc cx
-        ; int 10h
-        ; inc dx
-        ; int 10h
-        ; dec cx
-        ; int 10h
-        ; dec cx
-        ; int 10h
-        ; dec dx
-        ; int 10h
-        ; dec dx
-        ; int 10h
-        ; inc cx
-        ; int 10h
-        ; inc cx
-        ; int 10h
