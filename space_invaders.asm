@@ -3,18 +3,28 @@
 ; Maria Julia Hofstetter Trevisan Pereira   -- RA21250
 ; Informatica -- Cotuca -- 06/06/2023
 
-STACK SEGMENT PARA STACK; C:\Users\user\Desktop\Cotuca\Tecnico\Assembly\space-invaders-tasm\space_invaders.asm
+STACK SEGMENT PARA STACK
     DB 64 DUP (' ')
 STACK ENDS
 
 DATA SEGMENT PARA 'DATA'
-    naveX dw 0Ah
-    naveY dw 0Ah
+    time_aux db 0   ; auxiliar variable to check time 
+    score dw 0
+    vidasNum dw 3
+
+    shipX dw 160    ; ship position on X axis
+    shipY dw 150    ; ship position on Y axis
+    shipH dw 5      ; ship height
+    shipW dw 15      ; ship width
+    
+    
     
     msg db "DP Invaders!", 13, 10, '$'
+    play db "Press : [1] to play", 13, 10, '$'
+    close db "Press : [2] to close", 13, 10, '$'
     vidas db "VIDAS: ", 13, 10, '$'
     pontos db "PONTOS: ", 13, 10, '$'
-    vidasNum db 3, '$'
+
 DATA ENDS
 
 
@@ -37,86 +47,125 @@ CODE SEGMENT PARA 'CODE'
         mov ah, 0ch
         mov al, 56  ; color purple 
         mov bh, 00h
-
-        mov cx, naveX ; x = 160
-        mov dx, naveY ; y = 100
         int 10h
 
-        xor cx, cx
-        xor dx, dx
-        borderLR: 
-            ;mov al, 56
-            int 10h
-            inc cx
-            cmp cx, 319
-            jne borderLR
-
-        borderTB:
-            ;mov al, 56
-            int 10h
-            inc dx
-            cmp dx, 199
-            jne borderTB
-
-        borderRL:
-            ;mov al, 56
-            int 10h
-            dec cx
-            cmp cx, 0
-            jne borderRL
-
-        borderBT:
-            ;mov al, 56
-            int 10h
-            dec dx
-            cmp dx, 0
-            jne borderBT
-
-        square:
-            mov cx, naveX
-            mov dx, naveY
-            mov al, 60
-            int 10h
-            mov al, 56
-            inc cx
-            int 10h
-            inc dx
-            int 10h
-            dec cx
-            int 10h
-            dec cx
-            int 10h
-            dec dx
-            int 10h
-            dec dx
-            int 10h
-            inc cx
-            int 10h
-            inc cx
-            int 10h
-
-            call DRAW_UI
+        call DRAW_UI
 
 
+        check_time:
+            mov ah, 2Ch     ; get system time
+            int 21h     ; ch = hour, cl = minutes, dh = seconds, dl = centiseconds
+
+            cmp dl, time_aux
+            je check_time
+            mov time_aux, dl
+            call DRAW_SHIP
+
+            
         ret
     MAIN ENDP
 
 
+    DRAW_SHIP PROC NEAR
+        MOV CX, shipX
+        MOV DX, shipY
+
+        drawHorizontal:
+            mov ah, 0ch
+            mov al, 38h  ; color purple
+            mov bh, 00h
+            int 10h
+            inc cx
+            mov ax, cx
+            sub ax, shipX
+            cmp ax, shipW
+            jng drawHorizontal
+            mov cx, shipX
+            inc dx
+            mov ax, dx
+            sub ax, shipY
+            cmp ax, shipH
+            jng drawHorizontal
+
+
+        RET
+    DRAW_SHIP ENDP
+
     DRAW_UI PROC NEAR
+
+        xor cx, cx
+        xor dx, dx
+        borders:
+            borderLR: 
+                int 10h
+                inc cx
+                cmp cx, 319
+                jne borderLR
+
+            borderTB:
+                int 10h
+                inc dx
+                cmp dx, 199
+                jne borderTB
+
+            borderRL:
+                int 10h
+                dec cx
+                cmp cx, 0
+                jne borderRL
+
+            borderBT:
+                int 10h
+                dec dx
+                cmp dx, 0
+                jne borderBT
+
+
         mov ah, 02h
         mov bh, 00h
         mov dh, 04h
         mov dl, 06h
         int 10h
-
         mov ah, 09h 
-        lea DX, msg
+        lea dx, play
         int 21h
+
+        mov ah, 02h
+        mov dh, 05h
+        mov dl, 06h
+        int 10h
+        mov ah, 09h 
+        lea dx, close
+        int 21h
+
+
         ret
     DRAW_UI ENDP
 
 CODE ENDS
-
-
 END MAIN
 ```
+
+
+        ; mov al, 56  ; color purple 
+        ; mov cx, shipX
+        ; mov dx, shipY
+        ; mov al, 60
+        ; int 10h
+        ; mov al, 56
+        ; inc cx
+        ; int 10h
+        ; inc dx
+        ; int 10h
+        ; dec cx
+        ; int 10h
+        ; dec cx
+        ; int 10h
+        ; dec dx
+        ; int 10h
+        ; dec dx
+        ; int 10h
+        ; inc cx
+        ; int 10h
+        ; inc cx
+        ; int 10h
