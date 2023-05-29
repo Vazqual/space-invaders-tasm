@@ -137,7 +137,6 @@ CODE SEGMENT PARA 'CODE'
         ret
     DRAW_UI ENDP
 
-
     CLEAR_SCREEN PROC NEAR
         mov ah, 00h         ; set video mode
         mov al, 13h         ; 320x200 screen 
@@ -149,7 +148,6 @@ CODE SEGMENT PARA 'CODE'
         int 10h
         ret
     CLEAR_SCREEN ENDP
-
 
     MOVE_BALL PROC NEAR
         mov ax, shipVel
