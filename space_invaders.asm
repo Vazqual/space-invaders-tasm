@@ -12,6 +12,8 @@ DATA SEGMENT PARA 'DATA'
     score dw 0
     vidasNum dw 3
 
+    ISRUNNING dw 0  ; 0 = false, 1 = true
+
     shipX dw 160    ; ship position on X axis
     shipY dw 150    ; ship position on Y axis
     shipH dw 5      ; ship height
@@ -43,7 +45,7 @@ CODE SEGMENT PARA 'CODE'
         call DRAW_UI
 
 
-        check_time:
+        CHECK_TIME:
             mov ah, 2Ch     ; get system time
             int 21h         ; ch = hour, cl = minutes, dh = seconds, dl = centiseconds
 
@@ -51,12 +53,12 @@ CODE SEGMENT PARA 'CODE'
             je check_time
             mov time_aux, dl
 
-            call MOVE_BALL
+            call READ_KEYBOARD
             call CLEAR_SCREEN
             call DRAW_UI
             call DRAW_SHIP
 
-            jmp check_time
+            jmp CHECK_TIME
         ret
     MAIN ENDP
 
@@ -149,13 +151,93 @@ CODE SEGMENT PARA 'CODE'
         ret
     CLEAR_SCREEN ENDP
 
-    MOVE_BALL PROC NEAR
-        mov ax, shipVel
-        add shipX, ax
-        mov ax, shipVel
-        add shipY, ax
+    READ_KEYBOARD PROC NEAR
+        mov ah, 01h
+        int 16h
+        jz BRIDGE       ; JZ cant connect to EXIT directly because it is too far,
+                        ; so we use a bridge
+
+        mov ah, 00h
+        int 16h
+
+        cmp al, 41h     ; A
+        je MOVE_LEFT_FAST
+
+        cmp al, 61h     ; a
+        je MOVE_LEFT
+
+        cmp al, 44h     ; D
+        je MOVE_RIGHT_FAST
+
+        cmp al, 64h     ; d
+        je MOVE_RIGHT
+
+        cmp al, 57h     ; W
+        je MOVE_UP_FAST
+
+        cmp al, 77h     ; w
+        je MOVE_UP
+
+        cmp al, 53h     ; S
+        je MOVE_DOWN_FAST
+
+        cmp al, 73h     ; s
+        je MOVE_DOWN
+        jmp EXIT
+
+
+        BRIDGE:
+            jmp EXIT        ; its ugly but it works
+
+        MOVE_LEFT_FAST:
+            mov ax, shipVel
+            sub shipX, ax
+            sub shipX, ax
+            jmp EXIT
+
+        MOVE_LEFT:
+            mov ax, shipVel
+            sub shipX, ax
+            jmp EXIT
+
+
+        MOVE_RIGHT_FAST:
+            mov ax, shipVel
+            add shipX, ax
+            add shipX, ax
+            jmp EXIT
+
+        MOVE_RIGHT:
+            mov ax, shipVel
+            add shipX, ax
+            jmp EXIT
+
+        MOVE_UP_FAST:
+            mov ax, shipVel
+            sub shipY, ax
+            sub shipY, ax
+            jmp EXIT
+
+        MOVE_UP:
+            mov ax, shipVel
+            sub shipY, ax
+            jmp EXIT
+
+        MOVE_DOWN_FAST:
+            mov ax, shipVel
+            add shipY, ax
+            add shipY, ax
+            jmp EXIT
+
+        MOVE_DOWN:
+            mov ax, shipVel
+            add shipY, ax
+            jmp EXIT
+
+        EXIT:
+
         ret
-    MOVE_BALL ENDP
+    READ_KEYBOARD ENDP
 
 CODE ENDS
 END MAIN
