@@ -1,5 +1,5 @@
 ; Felipe Stolze Vazquez                     -- RA21233 
-; Maria Aclice Ferreira Pereira             -- RA21249
+; Maria Alice Ferreira Pereira             -- RA21249
 ; Maria Julia Hofstetter Trevisan Pereira   -- RA21250
 ; Informatica -- Cotuca -- 06/06/2023
 
@@ -8,11 +8,13 @@ STACK SEGMENT PARA STACK
 STACK ENDS
 
 DATA SEGMENT PARA 'DATA'
-    time_aux db 0   ; auxiliar variable to check time 
+    windowW dw 140h  ; window width
+    windowH dw 0C8h     ; window height
+
+    time_aux_centiseconds db 0   ; auxiliar variable to check centiseconds change  
+    time_aux_seconds db 0        ; auxiliar variable to check seconds change
     score dw 0
     vidasNum dw 3
-
-    ISRUNNING dw 0  ; 0 = false, 1 = true
 
     shipX dw 160    ; ship position on X axis
     shipY dw 150    ; ship position on Y axis
@@ -20,6 +22,11 @@ DATA SEGMENT PARA 'DATA'
     shipW dw 15     ; ship width
     shipVel dw 4h   ; ship velocity
     
+    shotX dw 0      ; shot position on X axis
+    shotY dw 0      ; shot position on Y axis
+    shotVel dw 8h   ; shot velocity
+
+    BFGshots dw 3   ; BFG BULLETS
     
     msg db "DP Invaders!", 13, 10, '$'
     play db "Press : [1] to play", 13, 10, '$'
@@ -49,9 +56,9 @@ CODE SEGMENT PARA 'CODE'
             mov ah, 2Ch     ; get system time
             int 21h         ; ch = hour, cl = minutes, dh = seconds, dl = centiseconds
 
-            cmp dl, time_aux
+            cmp dl, time_aux_centiseconds
             je check_time
-            mov time_aux, dl
+            mov time_aux_centiseconds, dl
 
             call READ_KEYBOARD
             call CLEAR_SCREEN
@@ -64,10 +71,11 @@ CODE SEGMENT PARA 'CODE'
 
 
     DRAW_SHIP PROC NEAR
-        MOV CX, shipX
-        MOV DX, shipY
 
-        drawHorizontal:
+        MOV CX, shipX
+        SUB CX, shipW
+        MOV DX, shipY
+        DRAW_HORIZONTAL_RIGHT:
             mov ah, 0ch
             mov al, 38h  ; color purple
             mov bh, 00h
@@ -75,15 +83,17 @@ CODE SEGMENT PARA 'CODE'
             inc cx
             mov ax, cx
             sub ax, shipX
-            cmp ax, shipW
-            jng drawHorizontal
+            mov bx, shipW
+            cmp ax, bx 
+            jng DRAW_HORIZONTAL_RIGHT
+
             mov cx, shipX
+            sub cx, shipW
             inc dx
             mov ax, dx
             sub ax, shipY
             cmp ax, shipH
-            jng drawHorizontal
-
+            jng DRAW_HORIZONTAL_RIGHT
 
         RET
     DRAW_SHIP ENDP
@@ -96,13 +106,13 @@ CODE SEGMENT PARA 'CODE'
             borderLR: 
                 int 10h
                 inc cx
-                cmp cx, 319
+                cmp cx, 319 
                 jne borderLR
 
             borderTB:
                 int 10h
                 inc dx
-                cmp dx, 199
+                cmp dx, 199 
                 jne borderTB
 
             borderRL:
@@ -123,17 +133,17 @@ CODE SEGMENT PARA 'CODE'
         mov dh, 04h
         mov dl, 06h
         int 10h
-        mov ah, 09h 
-        lea dx, play
-        int 21h
+        ; mov ah, 09h 
+        ; lea dx, play
+        ; int 21h
 
-        mov ah, 02h
-        mov dh, 05h
-        mov dl, 06h
-        int 10h
-        mov ah, 09h 
-        lea dx, close
-        int 21h
+        ; mov ah, 02h
+        ; mov dh, 05h
+        ; mov dl, 06h
+        ; int 10h
+        ; mov ah, 09h 
+        ; lea dx, close
+        ; int 21h
 
 
         ret
@@ -144,13 +154,27 @@ CODE SEGMENT PARA 'CODE'
         mov al, 13h         ; 320x200 screen 
         int 10h             ; execute configuration
         mov ah, 0ch
-        mov al, 56  ; color purple 
+        mov al, 38h  ; color purple 
         mov bh, 00h
         mov bl, 00h
         int 10h
         ret
     CLEAR_SCREEN ENDP
 
+
+    DRAW_SHOOT PROC NEAR
+        MOV AX, shotVel
+        SUB shotY, AX
+        MOV CX, shotX
+        MOV DX, shipY
+
+        mov ah, 0ch
+        mov al, 28h  ; color purple
+        mov bh, 00h
+        int 10h
+        ret
+    DRAW_SHOOT ENDP
+        
     READ_KEYBOARD PROC NEAR
         mov ah, 01h
         int 16h
@@ -172,45 +196,86 @@ CODE SEGMENT PARA 'CODE'
         cmp al, 64h     ; d
         je MOVE_RIGHT
 
-        cmp al, 57h     ; W
-        je MOVE_UP_FAST
+        ; cmp al, 57h     ; W
+        ; je MOVE_UP_FAST
 
-        cmp al, 77h     ; w
-        je MOVE_UP
+        ; cmp al, 77h     ; w
+        ; je MOVE_UP
 
-        cmp al, 53h     ; S
-        je MOVE_DOWN_FAST
+        ; cmp al, 53h     ; S
+        ; je MOVE_DOWN_FAST
 
-        cmp al, 73h     ; s
-        je MOVE_DOWN
+        ; cmp al, 73h     ; s
+        ; je MOVE_DOWN
+
+        cmp al, 72h
+        JE SHOOT
         jmp EXIT
+
+        SHOOT:
+            CALL DRAW_SHOOT
+
+        mov ah, 01h
+        int 16h
+        jz BRIDGE
 
 
         BRIDGE:
             jmp EXIT        ; its ugly but it works
 
         MOVE_LEFT_FAST:
+
             mov ax, shipVel
             sub shipX, ax
             sub shipX, ax
+            cmp shipX, 00h
+            jg BRIDGE
+            mov ax, shipVel
+            add shipX, ax
+            add shipX, ax
             jmp EXIT
+            
+
 
         MOVE_LEFT:
             mov ax, shipVel
             sub shipX, ax
+            cmp shipX, 00h
+            jg BRIDGE
+            mov ax, shipVel
+            add shipX, ax
             jmp EXIT
+            
+
+            
 
 
         MOVE_RIGHT_FAST:
             mov ax, shipVel
             add shipX, ax
             add shipX, ax
+            
+            mov ax, windowW
+            cmp shipX, ax
+            jl EXIT
+
+            mov ax, shipVel
+            sub shipX, ax
+            sub shipX, ax
             jmp EXIT
+
+            
 
         MOVE_RIGHT:
             mov ax, shipVel
             add shipX, ax
+            mov ax, windowW
+            cmp shipX, ax
+            jl EXIT
+            mov ax, shipVel
+            sub shipX, ax
             jmp EXIT
+            
 
         MOVE_UP_FAST:
             mov ax, shipVel
@@ -233,6 +298,7 @@ CODE SEGMENT PARA 'CODE'
             mov ax, shipVel
             add shipY, ax
             jmp EXIT
+
 
         EXIT:
 
