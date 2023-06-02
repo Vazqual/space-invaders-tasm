@@ -22,12 +22,12 @@ DATA SEGMENT PARA 'DATA'
     shipW dw 15     ; ship width
     shipVel dw 4h   ; ship velocity
     
-    shotX dw 0      ; shot position on X axis
-    shotY dw 0      ; shot position on Y axis
-    shotVel dw 8h   ; shot velocity
+    bulletsX        dw 0, 0, 0, 0, 0, 0, 0, 0   ; bullets position on X axis
+    bulletsY        dw 0, 0, 0, 0, 0, 0, 0, 0   ; bullets position on Y axis
+    bulletsActive   dw 0, 0, 0, 0, 0, 0, 0, 0   ; bullets active right now
+    bulletsRN       dw 0      ; bullets active right now
+    bulletVel       DW 10
 
-    BFGshots dw 3   ; BFG BULLETS
-    
     msg db "DP Invaders!", 13, 10, '$'
     play db "Press : [1] to play", 13, 10, '$'
     close db "Press : [2] to close", 13, 10, '$'
@@ -64,6 +64,7 @@ CODE SEGMENT PARA 'CODE'
             call CLEAR_SCREEN
             call DRAW_UI
             call DRAW_SHIP
+            call MOVE_SHOT
 
             jmp CHECK_TIME
         ret
@@ -161,8 +162,8 @@ CODE SEGMENT PARA 'CODE'
         ret
     CLEAR_SCREEN ENDP
 
-
-    DRAW_SHOOT PROC NEAR
+    MOVE_SHOT PROC NEAR
+        lea bx, bullets
         MOV AX, shotVel
         SUB shotY, AX
         MOV CX, shotX
@@ -173,7 +174,7 @@ CODE SEGMENT PARA 'CODE'
         mov bh, 00h
         int 10h
         ret
-    DRAW_SHOOT ENDP
+    MOVE_SHOT ENDP
         
     READ_KEYBOARD PROC NEAR
         mov ah, 01h
@@ -213,12 +214,18 @@ CODE SEGMENT PARA 'CODE'
         jmp EXIT
 
         SHOOT:
-            CALL DRAW_SHOOT
 
-        mov ah, 01h
-        int 16h
-        jz BRIDGE
+            lea bx, bulletsX
+            mov ax, shipX
+            mov [bx], ax
+            lea bx, bulletsY
+            mov ax, shipY
+            mov [bx], ax
+            lea bx, bulletsActive
+            mov ax, 01h
+            mov [bx], ax
 
+            jmp EXIT
 
         BRIDGE:
             jmp EXIT        ; its ugly but it works
@@ -234,8 +241,6 @@ CODE SEGMENT PARA 'CODE'
             add shipX, ax
             add shipX, ax
             jmp EXIT
-            
-
 
         MOVE_LEFT:
             mov ax, shipVel
@@ -245,10 +250,6 @@ CODE SEGMENT PARA 'CODE'
             mov ax, shipVel
             add shipX, ax
             jmp EXIT
-            
-
-            
-
 
         MOVE_RIGHT_FAST:
             mov ax, shipVel
@@ -264,8 +265,6 @@ CODE SEGMENT PARA 'CODE'
             sub shipX, ax
             jmp EXIT
 
-            
-
         MOVE_RIGHT:
             mov ax, shipVel
             add shipX, ax
@@ -275,30 +274,28 @@ CODE SEGMENT PARA 'CODE'
             mov ax, shipVel
             sub shipX, ax
             jmp EXIT
-            
 
-        MOVE_UP_FAST:
-            mov ax, shipVel
-            sub shipY, ax
-            sub shipY, ax
-            jmp EXIT
+        ; MOVE_UP_FAST:
+        ;     mov ax, shipVel
+        ;     sub shipY, ax
+        ;     sub shipY, ax
+        ;     jmp EXIT
 
-        MOVE_UP:
-            mov ax, shipVel
-            sub shipY, ax
-            jmp EXIT
+        ; MOVE_UP:
+        ;     mov ax, shipVel
+        ;     sub shipY, ax
+        ;     jmp EXIT
 
-        MOVE_DOWN_FAST:
-            mov ax, shipVel
-            add shipY, ax
-            add shipY, ax
-            jmp EXIT
+        ; MOVE_DOWN_FAST:
+        ;     mov ax, shipVel
+        ;     add shipY, ax
+        ;     add shipY, ax
+        ;     jmp EXIT
 
-        MOVE_DOWN:
-            mov ax, shipVel
-            add shipY, ax
-            jmp EXIT
-
+        ; MOVE_DOWN:
+        ;     mov ax, shipVel
+        ;     add shipY, ax
+        ;     jmp EXIT
 
         EXIT:
 
