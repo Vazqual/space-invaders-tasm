@@ -17,7 +17,7 @@ DATA SEGMENT PARA 'DATA'
     vidasNum dw 3
 
     shipX dw 160    ; ship position on X axis
-    shipY dw 150    ; ship position on Y axis
+    shipY dw 180    ; ship position on Y axis
     shipH dw 5      ; ship height
     shipW dw 15     ; ship width
     shipVel dw 4h   ; ship velocity
@@ -64,7 +64,7 @@ CODE SEGMENT PARA 'CODE'
             call CLEAR_SCREEN
             call DRAW_UI
             call DRAW_SHIP
-            call MOVE_SHOT
+            call MOVE_SHOTS
 
             jmp CHECK_TIME
         ret
@@ -162,19 +162,31 @@ CODE SEGMENT PARA 'CODE'
         ret
     CLEAR_SCREEN ENDP
 
-    MOVE_SHOT PROC NEAR
-        lea bx, bullets
-        MOV AX, shotVel
-        SUB shotY, AX
-        MOV CX, shotX
-        MOV DX, shipY
+    MOVE_SHOTS PROC NEAR
+        lea bx, bulletsActive
+        cmp [bx], 0
+        je MOVE_SHOTS_EXIT
 
+        lea bx, bulletsY
+        mov ax, bulletVel
+        sub bulletsY, ax
+        cmp bulletsY, 0
+
+        jle MOVE_SHOTS_EXIT ; this shouldn't work but it does,
+                            ; idk why
+
+        ;mov bulletsActive, 0 
+
+        mov cx, bulletsX
+        mov dx, bulletsY
         mov ah, 0ch
         mov al, 28h  ; color purple
         mov bh, 00h
         int 10h
+
+        MOVE_SHOTS_EXIT:
         ret
-    MOVE_SHOT ENDP
+    MOVE_SHOTS ENDP
         
     READ_KEYBOARD PROC NEAR
         mov ah, 01h
