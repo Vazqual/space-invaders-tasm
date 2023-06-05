@@ -163,6 +163,8 @@ CODE SEGMENT PARA 'CODE'
     CLEAR_SCREEN ENDP
 
     MOVE_SHOTS PROC NEAR
+        ;mov cx, bullets 
+
         lea bx, bulletsActive
         cmp [bx], 0
         je MOVE_SHOTS_EXIT
@@ -171,11 +173,7 @@ CODE SEGMENT PARA 'CODE'
         mov ax, bulletVel
         sub bulletsY, ax
         cmp bulletsY, 0
-
-        jle MOVE_SHOTS_EXIT ; this shouldn't work but it does,
-                            ; idk why
-
-        ;mov bulletsActive, 0 
+        jle OUT_OF_BOUNDS
 
         mov cx, bulletsX
         mov dx, bulletsY
@@ -183,6 +181,12 @@ CODE SEGMENT PARA 'CODE'
         mov al, 28h  ; color purple
         mov bh, 00h
         int 10h
+        jmp MOVE_SHOTS_EXIT 
+
+        OUT_OF_BOUNDS:
+            mov bulletsActive, 0
+            dec bulletsRN
+            jmp MOVE_SHOTS_EXIT
 
         MOVE_SHOTS_EXIT:
         ret
@@ -201,13 +205,13 @@ CODE SEGMENT PARA 'CODE'
         je MOVE_LEFT_FAST
 
         cmp al, 61h     ; a
-        je MOVE_LEFT
+        je MOVE_LEFT_BRIDGE
 
         cmp al, 44h     ; D
-        je MOVE_RIGHT_FAST
+        je MOVE_RIGHT_FAST_BRIDGE
 
         cmp al, 64h     ; d
-        je MOVE_RIGHT
+        je MOVE_RIGHT_BRIDGE
 
         ; cmp al, 57h     ; W
         ; je MOVE_UP_FAST
@@ -226,21 +230,51 @@ CODE SEGMENT PARA 'CODE'
         jmp EXIT
 
         SHOOT:
-
-            lea bx, bulletsX
-            mov ax, shipX
-            mov [bx], ax
-            lea bx, bulletsY
-            mov ax, shipY
-            mov [bx], ax
+            cmp bulletsRN, 0Ah
+            jge BRIDGE
+            inc bulletsRN
+            ; search first 0 value in bulletsActive
             lea bx, bulletsActive
-            mov ax, 01h
-            mov [bx], ax
+            mov cx, 0
+            search:
+                cmp [bx], 0h
+                je found
+                inc bx
+                inc bx
+                inc cx
+                cmp cx, 0Ah
+                jne search
+                jmp EXIT
+            found:
+            add cx, cx 
+            lea bx, bulletsX
+            mov si, cx
+            add si, bx
+            mov ax, shipX
+            mov [si], ax
+            lea bx, bulletsY
+            mov si, cx
+            add si, bx
+            mov ax, shipY
+            mov [si], ax
+            lea bx, bulletsActive
+            mov si, cx
+            add si, bx
+            mov [si], 01h
 
             jmp EXIT
 
         BRIDGE:
             jmp EXIT        ; its ugly but it works
+
+        MOVE_LEFT_BRIDGE:
+            jmp MOVE_LEFT
+
+        MOVE_RIGHT_FAST_BRIDGE:
+            jmp MOVE_RIGHT_FAST
+        
+        MOVE_RIGHT_BRIDGE:
+            jmp MOVE_RIGHT
 
         MOVE_LEFT_FAST:
 
