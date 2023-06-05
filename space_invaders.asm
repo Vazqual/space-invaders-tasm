@@ -163,11 +163,29 @@ CODE SEGMENT PARA 'CODE'
     CLEAR_SCREEN ENDP
 
     MOVE_SHOTS PROC NEAR
-        ;mov cx, bullets 
+    cmp bulletsRN, 0
+    je MOVE_SHOTS_EXIT  ; if there are no bullets, exit
+        xor cx, cx
+        CHECK_BULLETS:
+            add bx, cx
+            add bx, cx
+            inc cx
+            cmp [bx], 0
+            jne EXIT_CHECK_BULLETS
+            
+            jmp CHECK_BULLETS
+        ; cx has the index of the active bullet  
 
-        lea bx, bulletsActive
-        cmp [bx], 0
-        je MOVE_SHOTS_EXIT
+        EXIT_CHECK_BULLETS:      
+        
+        
+
+
+        ; lea bx, bulletsActive
+        ; add bx, ax
+        ; add bx, ax
+        ; cmp [bx], 0
+        ; je MOVE_SHOTS_EXIT
 
         lea bx, bulletsY
         mov ax, bulletVel
