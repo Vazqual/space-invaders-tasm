@@ -26,7 +26,15 @@ DATA SEGMENT PARA 'DATA'
     bulletsY        dw 0, 0, 0, 0;, 0, 0, 0, 0   ; bullets position on Y axis
     bulletsActive   dw 0, 0, 0, 0;, 0, 0, 0, 0   ; bullets active right now
     bulletsRN       dw 0      ; bullets active right now
+    maxBullets      dw 4h     ; max amount of bullets
     bulletVel       DW 10
+
+    invadersX       dw 40, 80, 120, 160, 200, 240, 280, 320; invaders position on X axis
+    invadersY       db 20, 40, 60, 80, 100, 120, 140 ; invaders position on Y axis
+    invadersH       dw 10     ; invaders height
+    invadersW       dw 10     ; invaders width
+    invadersVel     dw 1h     ; invaders velocity
+    invadersRN      dw 77     ; invaders right now
 
     msg db "DP Invaders!", 13, 10, '$'
     play db "Press : [1] to play", 13, 10, '$'
@@ -60,12 +68,12 @@ CODE SEGMENT PARA 'CODE'
             je check_time
             mov time_aux_centiseconds, dl
 
-            call READ_KEYBOARD
+            call READ_KEYBOARD  ; checks keyboard input
             call CLEAR_SCREEN
-            call DRAW_UI
-            call DRAW_SHIP
-            ;call DRAW_INVADERS
-            call MOVE_SHOTS
+            call DRAW_UI        ; borders, score, lives, etc
+            call DRAW_SHIP      ; draws ship
+            call MOVE_SHOTS     ; move shots
+            call DRAW_INVADERS  ; 
 
             jmp CHECK_TIME
         ret
@@ -164,19 +172,47 @@ CODE SEGMENT PARA 'CODE'
     DRAW_SHIP ENDP
 
     DRAW_INVADERS PROC NEAR
-        
+        lea bx, invadersX
+        lea si, invadersY
+        xor di, di
+        LINES:
+            mov cx, [bx]
+            mov dx, [si]
+            mov ah, 0ch
+            mov al, 38h  ; color purple
+            xor bx, bx
+            mov bh, 00h
+            int 10h
+            add di, 2
+            
+            lea bx, invadersX
+            add bx, di
+            cmp [bx], 320
+            jl LINES
 
+            lea bx, invadersX
+            add si, 2
+            xor di, di
+            cmp [si], 140
+            jl LINES
+
+            
+
+
+        ret
+    DRAW_INVADERS ENDP
+        
     MOVE_SHOTS PROC NEAR
     cmp bulletsRN, 0
-    je MOVE_SHOTS_EXIT  ; if there are no bullets, exit
-        xor si, si
-        CHECK_BULLETS:
+    je MOVE_SHOTS_EXIT              ; if there are no bullets, exit
+        xor si, si                  ; clears si register
+        CHECK_BULLETS:              ; loop for checking valid bullets
             add bx, si
             add bx, si
             cmp [bx], 0
             jne EXIT_CHECK_BULLETS
             inc si
-            cmp si, bulletsRN
+            cmp si, maxBullets
             jl CHECK_BULLETS
             jmp MOVE_SHOTS_EXIT
         ; si has the index of the active bullet  
@@ -214,6 +250,9 @@ CODE SEGMENT PARA 'CODE'
             add bx, si
             mov [bx], 0
             dec bulletsRN
+            inc si
+            cmp si, bulletsRN
+            jl CHECK_BULLETS
             jmp MOVE_SHOTS_EXIT
 
         MOVE_SHOTS_EXIT:
@@ -259,7 +298,8 @@ CODE SEGMENT PARA 'CODE'
         jmp EXIT
 
         SHOOT:
-            cmp bulletsRN, 04h
+            mov ax, maxBullets
+            cmp bulletsRN, ax
             jge BRIDGE
             inc bulletsRN
             ; search first 0 value in bulletsActive
