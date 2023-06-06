@@ -64,7 +64,7 @@ CODE SEGMENT PARA 'CODE'
             call CLEAR_SCREEN
             call DRAW_UI
             call DRAW_SHIP
-            ; call DRAW_INVADERS
+            ;call DRAW_INVADERS
             call MOVE_SHOTS
 
             jmp CHECK_TIME
