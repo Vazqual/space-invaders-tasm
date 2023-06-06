@@ -22,9 +22,9 @@ DATA SEGMENT PARA 'DATA'
     shipW dw 15     ; ship width
     shipVel dw 4h   ; ship velocity
     
-    bulletsX        dw 0, 0, 0, 0, 0, 0, 0, 0   ; bullets position on X axis
-    bulletsY        dw 0, 0, 0, 0, 0, 0, 0, 0   ; bullets position on Y axis
-    bulletsActive   dw 0, 0, 0, 0, 0, 0, 0, 0   ; bullets active right now
+    bulletsX        dw 0, 0, 0, 0;, 0, 0, 0, 0   ; bullets position on X axis
+    bulletsY        dw 0, 0, 0, 0;, 0, 0, 0, 0   ; bullets position on Y axis
+    bulletsActive   dw 0, 0, 0, 0;, 0, 0, 0, 0   ; bullets active right now
     bulletsRN       dw 0      ; bullets active right now
     bulletVel       DW 10
 
@@ -64,40 +64,13 @@ CODE SEGMENT PARA 'CODE'
             call CLEAR_SCREEN
             call DRAW_UI
             call DRAW_SHIP
+            call DRAW_INVADERS
             call MOVE_SHOTS
 
             jmp CHECK_TIME
         ret
     MAIN ENDP
 
-
-    DRAW_SHIP PROC NEAR
-
-        MOV CX, shipX
-        SUB CX, shipW
-        MOV DX, shipY
-        DRAW_HORIZONTAL_RIGHT:
-            mov ah, 0ch
-            mov al, 38h  ; color purple
-            mov bh, 00h
-            int 10h
-            inc cx
-            mov ax, cx
-            sub ax, shipX
-            mov bx, shipW
-            cmp ax, bx 
-            jng DRAW_HORIZONTAL_RIGHT
-
-            mov cx, shipX
-            sub cx, shipW
-            inc dx
-            mov ax, dx
-            sub ax, shipY
-            cmp ax, shipH
-            jng DRAW_HORIZONTAL_RIGHT
-
-        RET
-    DRAW_SHIP ENDP
 
     DRAW_UI PROC NEAR
 
@@ -162,51 +135,89 @@ CODE SEGMENT PARA 'CODE'
         ret
     CLEAR_SCREEN ENDP
 
+    DRAW_SHIP PROC NEAR
+
+        MOV CX, shipX
+        SUB CX, shipW
+        MOV DX, shipY
+        DRAW_HORIZONTAL_RIGHT:
+            mov ah, 0ch
+            mov al, 38h  ; color purple
+            mov bh, 00h
+            int 10h
+            inc cx
+            mov ax, cx
+            sub ax, shipX
+            mov bx, shipW
+            cmp ax, bx 
+            jng DRAW_HORIZONTAL_RIGHT
+
+            mov cx, shipX
+            sub cx, shipW
+            inc dx
+            mov ax, dx
+            sub ax, shipY
+            cmp ax, shipH
+            jng DRAW_HORIZONTAL_RIGHT
+
+        RET
+    DRAW_SHIP ENDP
+
+    DRAW_INVADERS PROC NEAR
+        
+
     MOVE_SHOTS PROC NEAR
     cmp bulletsRN, 0
     je MOVE_SHOTS_EXIT  ; if there are no bullets, exit
-        xor cx, cx
+        xor si, si
         CHECK_BULLETS:
-            add bx, cx
-            add bx, cx
-            inc cx
+            add bx, si
+            add bx, si
             cmp [bx], 0
             jne EXIT_CHECK_BULLETS
-            
-            jmp CHECK_BULLETS
-        ; cx has the index of the active bullet  
+            inc si
+            cmp si, bulletsRN
+            jl CHECK_BULLETS
+            jmp MOVE_SHOTS_EXIT
+        ; si has the index of the active bullet  
 
-        EXIT_CHECK_BULLETS:      
-        
-        
-
-
-        ; lea bx, bulletsActive
-        ; add bx, ax
-        ; add bx, ax
-        ; cmp [bx], 0
-        ; je MOVE_SHOTS_EXIT
+        EXIT_CHECK_BULLETS:
 
         lea bx, bulletsY
+        add bx, si
+        add bx, si
         mov ax, bulletVel
-        sub bulletsY, ax
-        cmp bulletsY, 0
+        sub [bx], ax
+        cmp [bx], 0
         jle OUT_OF_BOUNDS
 
-        mov cx, bulletsX
-        mov dx, bulletsY
+        mov dx, [bx]
+        lea bx, bulletsX
+        add bx, si
+        add bx, si
+        mov cx, bulletsX 
+
+        xor bx, bx
         mov ah, 0ch
-        mov al, 28h  ; color purple
+        mov al, 28h  ; color red
         mov bh, 00h
         int 10h
+
+        inc si
+        cmp si, bulletsRN
+        jle CHECK_BULLETS
         jmp MOVE_SHOTS_EXIT 
 
         OUT_OF_BOUNDS:
-            mov bulletsActive, 0
+            lea bx, bulletsActive
+            add bx, si
+            add bx, si
+            mov [bx], 0
             dec bulletsRN
             jmp MOVE_SHOTS_EXIT
 
         MOVE_SHOTS_EXIT:
+        xor si, si
         ret
     MOVE_SHOTS ENDP
         
@@ -248,7 +259,7 @@ CODE SEGMENT PARA 'CODE'
         jmp EXIT
 
         SHOOT:
-            cmp bulletsRN, 0Ah
+            cmp bulletsRN, 04h
             jge BRIDGE
             inc bulletsRN
             ; search first 0 value in bulletsActive
