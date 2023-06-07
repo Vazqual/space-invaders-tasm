@@ -29,8 +29,8 @@ DATA SEGMENT PARA 'DATA'
     maxBullets      dw 4h     ; max amount of bullets
     bulletVel       DW 10
 
-    invadersX       dw 40, 80, 120, 160, 200, 240, 280, 320; invaders position on X axis
-    invadersY       db 20, 40, 60, 80, 100, 120, 140 ; invaders position on Y axis
+    ;invadersX       dw 40, 80, 120, 160, 200, 240, 280, '?'; invaders position on X axis
+    ;invadersY       db 20, 40, 60, 80, 100, 120, '?' ; invaders position on Y axis
     invadersH       dw 10     ; invaders height
     invadersW       dw 10     ; invaders width
     invadersVel     dw 1h     ; invaders velocity
@@ -78,7 +78,6 @@ CODE SEGMENT PARA 'CODE'
             jmp CHECK_TIME
         ret
     MAIN ENDP
-
 
     DRAW_UI PROC NEAR
 
@@ -172,31 +171,21 @@ CODE SEGMENT PARA 'CODE'
     DRAW_SHIP ENDP
 
     DRAW_INVADERS PROC NEAR
-        lea bx, invadersX
-        lea si, invadersY
-        xor di, di
-        LINES:
-            mov cx, [bx]
-            mov dx, [si]
+        xor cx, cx
+        xor dx, dx
+        horizontal:
             mov ah, 0ch
             mov al, 38h  ; color purple
-            xor bx, bx
             mov bh, 00h
             int 10h
-            add di, 2
-            
-            lea bx, invadersX
-            add bx, di
-            cmp [bx], 320
-            jl LINES
+            add cx, 40
+            cmp cx, 320
+            jl horizontal
 
-            lea bx, invadersX
-            add si, 2
-            xor di, di
-            cmp [si], 140
-            jl LINES
-
-            
+        xor cx, cx
+        add dx, 20
+        cmp dx, 120
+        jl horizontal
 
 
         ret
