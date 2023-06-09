@@ -192,16 +192,20 @@ CODE SEGMENT PARA 'CODE'
     DRAW_INVADERS ENDP
         
     MOVE_SHOTS PROC NEAR
-    cmp bulletsRN, 0
-    je MOVE_SHOTS_EXIT              ; if there are no bullets, exit
-    lea bx, bulletsY
-        xor si, si                  ; clears si register
+        cmp bulletsRN, 0
+        je MOVE_SHOTS_EXIT              ; if there are no bullets, exit
+        lea bx, bulletsY
+        xor si, si                  ; clears si register, that we will use as index
+                                    ; for checking the bullets
         CHECK_BULLETS:              ; loop for checking valid bullets
+            lea bx, bulletsY        ; positions bx to the start of bulletsY
             add bx, si
-            cmp [bx], 0
-            jne EXIT_CHECK_BULLETS
-            add si, 2
-            cmp si, maxBullets
+            add bx, si              ; positions bx to the right bullet
+            cmp [bx], 0             ; checks if the bullet is active
+            jne EXIT_CHECK_BULLETS  ; if it is, exit the loop
+            inc si               ; if not, check the next bullet
+                                    ; (we sum 2 because we store bulletY in a word array)
+            cmp si, maxBullets      
             jl CHECK_BULLETS
             jmp MOVE_SHOTS_EXIT
         ; si has the index of the active bullet  
@@ -210,14 +214,18 @@ CODE SEGMENT PARA 'CODE'
 
         mov ax, bulletVel
         sub [bx], ax
-        cmp [bx], 5
+        mov ax, [bx]
+        cmp ax, 0
         jle OUT_OF_BOUNDS
 
+        lea bx, bulletsY
+        add bx, si
+        add bx, si
         mov dx, [bx]
         lea bx, bulletsX
         add bx, si
         add bx, si
-        mov cx, bulletsX 
+        mov cx, [bx] 
 
         xor bx, bx
         mov ah, 0ch
@@ -226,8 +234,8 @@ CODE SEGMENT PARA 'CODE'
         int 10h
 
         inc si
-        cmp si, bulletsRN
-        jle CHECK_BULLETS
+        cmp si, maxBullets
+        jl CHECK_BULLETS
         jmp MOVE_SHOTS_EXIT 
 
         OUT_OF_BOUNDS:
@@ -247,6 +255,9 @@ CODE SEGMENT PARA 'CODE'
 
         MOVE_SHOTS_EXIT:
         xor si, si
+        xor bx, bx
+        xor ax, ax
+        xor dx, dx
         ret
     MOVE_SHOTS ENDP
         
@@ -288,37 +299,34 @@ CODE SEGMENT PARA 'CODE'
         jmp EXIT
 
         SHOOT:
-            mov ax, maxBullets
-            cmp bulletsRN, ax
-            jg BRIDGE
+            mov bx, bulletsRN
+            cmp bx, maxBullets
+
+            jge BRIDGE
             inc bulletsRN
             ; search first 0 value in bulletsActive
             lea bx, bulletsY
-            mov cx, 0
+            xor cx, cx
             search:
+                cmp cx, maxBullets
+                je BRIDGE
                 cmp [bx], 0h
                 je found
                 add bx, 2
                 inc cx
-                cmp cx, maxBullets
-                jne search
-                jmp EXIT
+                jmp search
+
             found:
-            add cx, cx 
             lea bx, bulletsX
-            mov si, cx
-            add si, bx
+            add bx, cx
+            add bx, cx
             mov ax, shipX
-            mov [si], ax
+            mov [bx], ax
             lea bx, bulletsY
-            mov si, cx
-            add si, bx
+            add bx, cx
+            add bx, cx
             mov ax, shipY
-            mov [si], ax
-            ; lea bx, bulletsActive
-            ; mov si, cx
-            ; add si, bx
-            ; mov [si], 01h
+            mov [bx], ax
 
             jmp EXIT
 
