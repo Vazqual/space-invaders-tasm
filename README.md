@@ -22,4 +22,4 @@ Caso houvesse mais tempo poderia ser implementado um sistema de pontuação e de
 
 Conseguimos tirar 8,5 no projeto :)
 
-Como consideração final, os comentários podem ter ficado confusos por estarem em inglês, enquanto este read.me está em português, pretendo mudar isso em meus próximos projetos, procurando manter um padrão para ambos ou em portugues ou em inglês, mas sem intercalar o uso de ambos.
+Como consideração final, os comentários podem ter ficado confusos por estarem em inglês, enquanto este readme.md está em português, pretendo mudar isso em meus próximos projetos, procurando manter um padrão para ambos ou em portugues ou em inglês, mas sem intercalar o uso de ambos.
