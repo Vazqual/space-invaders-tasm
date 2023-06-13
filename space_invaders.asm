@@ -10,6 +10,8 @@ STACK SEGMENT PARA STACK
 STACK ENDS
 
 DATA SEGMENT PARA 'DATA'
+    RUNNING db 1h       ; 1 = running, 0 = stopped
+
     windowW dw 140h     ; window width
     windowH dw 0C8h     ; window height
 
@@ -35,13 +37,10 @@ DATA SEGMENT PARA 'DATA'
     invadersRN          dw 10h      ; 16d invaders right now
     maxInvaders         dw 10h      ; max amount of invaders
     invadersDir         dw  0h      ; 0 = right, 1 = down, 2 = left
-    invadersPos         dw  0h
+    invadersPos         dw  0h      ; auxilary variable to check invaders position
     
     msgWin db "VOCE VENCEU O DP INVADERS!!!", 13, 10, '$'
-    play db "Press : [1] to play", 13, 10, '$'
-    close db "Press : [2] to close", 13, 10, '$'
-    vidas db "VIDAS: ", 13, 10, '$'
-    pontos db "PONTOS: ", 13, 10, '$'
+    msgLost db "VOCE PERDEU O DP INVADERS!!!", 13, 10, '$'
 
     credits db "CREDITOS", 13, 10, '$'
     creditsFSV db "FELIPE STOLZE VAZQUEZ", 13, 10, '$'
@@ -75,71 +74,37 @@ CODE SEGMENT PARA 'CODE'
 
             call READ_KEYBOARD      ; checks keyboard input
             call CLEAR_SCREEN
-            call DRAW_UI            ; borders, score, lives, etc
+            call DRAW_UI            ; borders 
             call DRAW_SHIP          ; draws ship
             call MOVE_SHOTS         ; move shots
             call MOVE_INVADERS      ; move invaders
             call CHECK_COLLISIONS   ; checks for any dead invader
-            call DRAW_INVADERS      ; 
+            call DRAW_INVADERS
+
+            cmp RUNNING, 0
+            je LOST
 
             cmp invadersRN, 0
-            je WINNER
+            jne CHECK_TIME
+
+            call WINNER
             jmp CHECK_TIME
 
-        WINNER:
-            mov ah, 02h
-            mov bh, 00h 
-            mov dh, 08h ; set row 
-            mov dl, 6h ; set column
-            int 10h
 
-            mov ah, 09h
-            lea dx, msgWin  
-            int 21h
+            LOST:
+                mov ah, 02h
+                mov bh, 00h 
+                mov dh, 08h ; set row 
+                mov dl, 6h ; set column
+                int 10h
 
-            mov ah, 02h
-            mov bh, 00h
-            mov dh, 0Ah ; set row
-            mov dl, 10h ; set column
-            int 10h
+                mov ah, 09h
+                lea dx, msgLost  
+                int 21h
 
-            mov ah, 09h
-            lea dx, credits
-            int 21h
+                mov ah, 4ch
+                int 21h
 
-            mov ah, 02h
-            mov bh, 00h
-            mov dh, 0Ch ; set row
-            mov dl, 9h ; set column
-            int 10h
-
-            mov ah, 09h
-            lea dx, creditsFSV
-            int 21h
-
-            mov ah, 02h
-            mov bh, 00h
-            mov dh, 0Dh ; set row
-            mov dl, 6h ; set column
-            int 10h
-            
-            mov ah, 09h
-            lea dx, creditsMAFP
-            int 21h
-
-            mov ah, 02h
-            mov bh, 00h
-            mov dh, 0Eh ; set row
-            mov dl, 00h ; set column
-            int 10h
-
-            mov ah, 09h
-            lea dx, creditsMJHTP
-            int 21h
-
-
-
-            jmp CHECK_TIME
 
         ret
     MAIN ENDP
@@ -191,14 +156,15 @@ CODE SEGMENT PARA 'CODE'
 
     DRAW_SHIP PROC NEAR
 
-        MOV CX, shipX
+        MOV CX, shipX       ; cx will hold the X value on screen
         SUB CX, shipW
-        MOV DX, shipY
+        MOV DX, shipY       ; dx will hold the Y value on screen
         DRAW_HORIZONTAL_RIGHT:
             mov ah, 0ch
             mov al, 38h  ; color purple
             mov bh, 00h
             int 10h
+
             inc cx
             mov ax, cx
             sub ax, shipX
@@ -212,34 +178,36 @@ CODE SEGMENT PARA 'CODE'
             mov ax, dx
             sub ax, shipY
             cmp ax, shipH
+
+            ; cx and dx need to have the right values here
             jng DRAW_HORIZONTAL_RIGHT
 
         RET
     DRAW_SHIP ENDP
 
     MOVE_INVADERS PROC NEAR
-        cmp invadersRN, 0
+        cmp invadersRN, 0       ; if there are no invaders, exit
         je B_MOVE_INVADERS_EXIT
         lea bx, invadersX
-        xor si, si
+        xor si, si      ; clears index
         START_LOOKING:
-        cmp invadersDir, 0
+        cmp invadersDir, 0      ; if invaders are moving right
         je MOVE_DIR_RIGHT
-        cmp invadersDir, 1
+        cmp invadersDir, 1      ; if invaders are moving down
         je MOVE_DIR_DOWN
-        cmp invadersDir, 2
+        cmp invadersDir, 2      ; if invaders are moving left
         je MOVE_DIR_LEFT
 
         MOVE_DIR_RIGHT:
             cmp [bx], 0
-            je NEXT_ALIEN
+            je B_NEXT_ALIEN
             mov ax, [bx]
             add ax, invadersVel
             mov [bx], ax
             inc si
             add bx, 2
             cmp invadersPos, 60
-            je CHANGE_DIR_DOWN
+            je B_CHANGE_DIR_DOWN
             cmp si, maxInvaders
             jl MOVE_DIR_RIGHT
             jmp MOVE_INVADERS_EXIT
@@ -262,6 +230,9 @@ CODE SEGMENT PARA 'CODE'
                 mov [bx], ax
                 inc si
                 add bx, 2
+                mov ax, shipY
+                cmp [bx], ax
+                jge GAME_OVER
                 cmp invadersPos, 11
                 je CHANGE_DIR_LEFT
                 cmp si, maxInvaders
@@ -271,6 +242,12 @@ CODE SEGMENT PARA 'CODE'
 
             B_MOVE_INVADERS_EXIT:
                 jmp MOVE_INVADERS_EXIT
+
+            B_CHANGE_DIR_DOWN:
+                jmp CHANGE_DIR_DOWN
+
+            B_NEXT_ALIEN:
+                jmp NEXT_ALIEN
 
         MOVE_DIR_LEFT:
             cmp [bx], 0
@@ -310,6 +287,10 @@ CODE SEGMENT PARA 'CODE'
 
         MOVE_INVADERS_EXIT:
         inc invadersPos
+        ret
+
+        GAME_OVER:
+            mov RUNNING, 0
 
         ret
     MOVE_INVADERS ENDP
@@ -430,15 +411,15 @@ CODE SEGMENT PARA 'CODE'
         xor dx, dx
         ret
     MOVE_SHOTS ENDP
-        
+
     CHECK_COLLISIONS PROC NEAR
         lea ax, bulletsRN
-        cmp ax, 0
-        je B_EXIT_CHECK_COLLISIONS
+        cmp ax, 0           ; if there are no bullets
+        je B_EXIT_CHECK_COLLISIONS  ; exit
         lea bx, bulletsY
         xor si, si
         xor dx, dx
-        SEARCH_BULLETS:     ; finds a bullet t
+        SEARCH_BULLETS:     ; finds a bullet
             cmp si, maxBullets
             je B_EXIT_CHECK_COLLISIONS
             cmp [bx], 0h
@@ -538,6 +519,7 @@ B_EXIT_CHECK_COLLISIONS:
             add bx, si
             mov [bx], 0
             dec bulletsRN
+        jmp NEXT_BULLET
 
             
 
@@ -558,13 +540,6 @@ B_EXIT_CHECK_COLLISIONS:
             add bx, si
             jmp SEARCH_BULLETS
 
-
-        ; get bullet position 
-        ; check if it is in the same position as any invader
-        ; if it is, kill the invader and the bullet
-        ; if it is not, continue
-        ; if there are no more bullets, exit
-        ; if there are more bullets, repeat
         EXIT_CHECK_COLLISIONS:
         ret
     CHECK_COLLISIONS ENDP
@@ -607,34 +582,34 @@ B_EXIT_CHECK_COLLISIONS:
         jmp EXIT
 
         SHOOT:
-            mov bx, bulletsRN
-            cmp bx, maxBullets
+            mov bx, bulletsRN       ; amount of bullets on screen
+            cmp bx, maxBullets 
             jge BRIDGE
 
             inc bulletsRN
             ; search first 0 value in bulletsActive
             lea bx, bulletsY
-            xor cx, cx
-            search:
+            xor cx, cx      ; index of search
+            search:         ; search for a free bullet  
                 cmp cx, maxBullets
-                je BRIDGE
-                cmp [bx], 0h
-                je found
-                add bx, 2
-                inc cx
+                je BRIDGE       ; cant exit directly so we use the bridge
+                cmp [bx], 0h    ; if bullet is not active,
+                je found        ; we found a free bullet
+                add bx, 2       ; else, we check the next bullet
+                inc cx          ; and increment the index
                 jmp search
 
             found:
-            lea bx, bulletsX
-            add bx, cx
-            add bx, cx
+            lea bx, bulletsX 
+            add bx, cx 
+            add bx, cx      ; now [bx] has the value of the x position of the bullet
             mov ax, shipX
-            mov [bx], ax
+            mov [bx], ax    ; we atribute a value to the x position of the bullet
             lea bx, bulletsY
             add bx, cx
-            add bx, cx
-            mov ax, shipY
-            mov [bx], ax
+            add bx, cx      ; now [bx] has the value of the y position of the bullet
+            mov ax, shipY   
+            mov [bx], ax    ; we atribute a value to the y position of the bullet
 
             jmp EXIT
 
@@ -727,6 +702,59 @@ B_EXIT_CHECK_COLLISIONS:
         ret
     READ_KEYBOARD ENDP
 
+    WINNER PROC NEAR
+            mov ah, 02h
+            mov bh, 00h 
+            mov dh, 08h ; set row 
+            mov dl, 6h ; set column
+            int 10h
+
+            mov ah, 09h
+            lea dx, msgWin  
+            int 21h
+
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Ah ; set row
+            mov dl, 10h ; set column
+            int 10h
+
+            mov ah, 09h
+            lea dx, credits
+            int 21h
+
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Ch ; set row
+            mov dl, 9h ; set column
+            int 10h
+
+            mov ah, 09h
+            lea dx, creditsFSV
+            int 21h
+
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Dh ; set row
+            mov dl, 6h ; set column
+            int 10h
+            
+            mov ah, 09h
+            lea dx, creditsMAFP
+            int 21h
+
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Eh ; set row
+            mov dl, 01h ; set column
+            int 10h
+
+            mov ah, 09h
+            lea dx, creditsMJHTP
+            int 21h
+
+        ret
+    WINNER ENDP
 CODE ENDS
 END MAIN
 ```
