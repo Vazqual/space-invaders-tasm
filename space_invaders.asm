@@ -109,7 +109,7 @@ CODE SEGMENT PARA 'CODE'
 
             mov ah, 02h
             mov bh, 00h
-            mov dh, 0Bh ; set row
+            mov dh, 0Ch ; set row
             mov dl, 9h ; set column
             int 10h
 
@@ -119,7 +119,7 @@ CODE SEGMENT PARA 'CODE'
 
             mov ah, 02h
             mov bh, 00h
-            mov dh, 0Ch ; set row
+            mov dh, 0Dh ; set row
             mov dl, 6h ; set column
             int 10h
             
@@ -129,7 +129,7 @@ CODE SEGMENT PARA 'CODE'
 
             mov ah, 02h
             mov bh, 00h
-            mov dh, 0Dh ; set row
+            mov dh, 0Eh ; set row
             mov dl, 00h ; set column
             int 10h
 
