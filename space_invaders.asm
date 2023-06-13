@@ -15,10 +15,6 @@ DATA SEGMENT PARA 'DATA'
 
     time_aux_centiseconds db 0   ; auxiliar variable to check centiseconds change  
     time_aux_seconds    db 0        ; auxiliar variable to check seconds change
-    initial_time        dw 0
-    final_time          dw 0
-
-    vidasNum dw 3
 
     shipX dw 0A0h    ; ship position on X axis
     shipY dw 0B4h    ; ship position on Y axis
@@ -47,6 +43,11 @@ DATA SEGMENT PARA 'DATA'
     vidas db "VIDAS: ", 13, 10, '$'
     pontos db "PONTOS: ", 13, 10, '$'
 
+    credits db "CREDITOS", 13, 10, '$'
+    creditsFSV db "FELIPE STOLZE VAZQUEZ", 13, 10, '$'
+    creditsMAFP db "MARIA ALICE FERREIRA PEREIRA", 13, 10, '$'
+    creditsMJHTP db "MARIA JULIA HOFSTETTER TREVISAN PEREIRA", 13, 10, '$'
+
 DATA ENDS
 
 CODE SEGMENT PARA 'CODE'
@@ -62,12 +63,6 @@ CODE SEGMENT PARA 'CODE'
 
         call CLEAR_SCREEN
         call DRAW_UI
-
-        mov ah, 2Ch
-        int 21h
-        mov dh, cl
-        mov initial_time, dx
-        
 
 
         CHECK_TIME:
@@ -94,19 +89,56 @@ CODE SEGMENT PARA 'CODE'
         WINNER:
             mov ah, 02h
             mov bh, 00h 
-            mov dh, 01h ; set row 
+            mov dh, 08h ; set row 
+            mov dl, 6h ; set column
+            int 10h
+
+            mov ah, 09h
+            lea dx, msgWin  
+            int 21h
+
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Ah ; set row
             mov dl, 10h ; set column
             int 10h
 
-            cmp final_time, 0
-            je CHECK_TIME
-                
-            mov ah, 2Ch
+            mov ah, 09h
+            lea dx, credits
             int 21h
-            mov dh, cl
-            mov final_time, dx
 
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Bh ; set row
+            mov dl, 9h ; set column
+            int 10h
+
+            mov ah, 09h
+            lea dx, creditsFSV
+            int 21h
+
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Ch ; set row
+            mov dl, 6h ; set column
+            int 10h
             
+            mov ah, 09h
+            lea dx, creditsMAFP
+            int 21h
+
+            mov ah, 02h
+            mov bh, 00h
+            mov dh, 0Dh ; set row
+            mov dl, 00h ; set column
+            int 10h
+
+            mov ah, 09h
+            lea dx, creditsMJHTP
+            int 21h
+
+
+
             jmp CHECK_TIME
 
         ret
