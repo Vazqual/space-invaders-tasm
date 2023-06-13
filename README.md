@@ -1,8 +1,11 @@
 "# space-invaders-tasm" 
 
 Autores:
+
 Felipe Stolze Vazquez
+
 Maria Alice Ferreira Pereira
+
 Maria Julia Hofstetter Trevisan Pereira
 
 Projeto final para a matéria de Linguagem de Montagem do Colégio Técnico de Campinas, do curso de Informática.
