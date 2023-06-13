@@ -2,6 +2,8 @@
 ; Maria Alice Ferreira Pereira              -- RA21249
 ; Maria Julia Hofstetter Trevisan Pereira   -- RA21250
 ; Informatica -- Cotuca -- 06/06/2023
+;
+; Data extendida para       13/06/2023
 
 STACK SEGMENT PARA STACK
     DB 64 DUP (' ')
@@ -12,8 +14,10 @@ DATA SEGMENT PARA 'DATA'
     windowH dw 0C8h     ; window height
 
     time_aux_centiseconds db 0   ; auxiliar variable to check centiseconds change  
-    time_aux_seconds db 0        ; auxiliar variable to check seconds change
-    score db '00000', '$'        ; score
+    time_aux_seconds    db 0        ; auxiliar variable to check seconds change
+    initial_time        dw 0
+    final_time          dw 0
+
     vidasNum dw 3
 
     shipX dw 0A0h    ; ship position on X axis
@@ -24,7 +28,7 @@ DATA SEGMENT PARA 'DATA'
     
     bulletsX        dw 0, 0, 0, 0, 0, 0, 0, 0;, 0;, 0, 0, 0, 0, 0, 0, 0   ; bullets position on X axis
     bulletsY        dw 0, 0, 0, 0, 0, 0, 0, 0;, 0;, 0, 0, 0, 0, 0, 0, 0   ; bullets position on Y axis
-    bulletVel       DW 3h       ; bullet velocity
+    bulletVel       DW 5h       ; bullet velocity
     bulletsRN       dw 0h       ; bullets active right now
     maxBullets      dw 8h       ; max amount of bullets
 
@@ -32,12 +36,12 @@ DATA SEGMENT PARA 'DATA'
     invadersY           dw  20,  20,  20,  20,  45,  45,  45,  45,  70,  70,  70,  70,  95,  95,  95,  95
     invadersPadding     dw 0Fh      ; invaders height
     invadersVel         dw 1h       ; invaders velocity
-    invadersRN          dw 10h      ; invaders right now
+    invadersRN          dw 10h      ; 16d invaders right now
     maxInvaders         dw 10h      ; max amount of invaders
     invadersDir         dw  0h      ; 0 = right, 1 = down, 2 = left
     invadersPos         dw  0h
     
-    msg db "DP Invaders!", 13, 10, '$'
+    msgWin db "VOCE VENCEU O DP INVADERS!!!", 13, 10, '$'
     play db "Press : [1] to play", 13, 10, '$'
     close db "Press : [2] to close", 13, 10, '$'
     vidas db "VIDAS: ", 13, 10, '$'
@@ -59,13 +63,19 @@ CODE SEGMENT PARA 'CODE'
         call CLEAR_SCREEN
         call DRAW_UI
 
+        mov ah, 2Ch
+        int 21h
+        mov dh, cl
+        mov initial_time, dx
+        
+
 
         CHECK_TIME:
             mov ah, 2Ch     ; get system time
             int 21h         ; ch = hour, cl = minutes, dh = seconds, dl = centiseconds
 
             cmp dl, time_aux_centiseconds
-            je check_time
+            je CHECK_TIME
             mov time_aux_centiseconds, dl
 
             call READ_KEYBOARD      ; checks keyboard input
@@ -75,11 +85,30 @@ CODE SEGMENT PARA 'CODE'
             call MOVE_SHOTS         ; move shots
             call MOVE_INVADERS      ; move invaders
             call CHECK_COLLISIONS   ; checks for any dead invader
-
             call DRAW_INVADERS      ; 
 
-
+            cmp invadersRN, 0
+            je WINNER
             jmp CHECK_TIME
+
+        WINNER:
+            mov ah, 02h
+            mov bh, 00h 
+            mov dh, 01h ; set row 
+            mov dl, 10h ; set column
+            int 10h
+
+            cmp final_time, 0
+            je CHECK_TIME
+                
+            mov ah, 2Ch
+            int 21h
+            mov dh, cl
+            mov final_time, dx
+
+            
+            jmp CHECK_TIME
+
         ret
     MAIN ENDP
 
@@ -177,7 +206,7 @@ CODE SEGMENT PARA 'CODE'
             mov [bx], ax
             inc si
             add bx, 2
-            cmp invadersPos, 80
+            cmp invadersPos, 60
             je CHANGE_DIR_DOWN
             cmp si, maxInvaders
             jl MOVE_DIR_RIGHT
@@ -201,7 +230,7 @@ CODE SEGMENT PARA 'CODE'
                 mov [bx], ax
                 inc si
                 add bx, 2
-                cmp invadersPos, 10
+                cmp invadersPos, 11
                 je CHANGE_DIR_LEFT
                 cmp si, maxInvaders
                 jl MOVE_INVADERS_DOWN
@@ -219,7 +248,7 @@ CODE SEGMENT PARA 'CODE'
             mov [bx], ax
             inc si
             add bx, 2
-            cmp invadersPos, 80
+            cmp invadersPos, 60
             je CHANGE_DIR_RIGHT
             cmp si, maxInvaders
             jl MOVE_DIR_LEFT
@@ -277,19 +306,16 @@ CODE SEGMENT PARA 'CODE'
             int 10h
 
             sub dx, 5h
+            sub cx, 5h
             int 10h 
             add cx, 5h
             int 10h
-            add dx, 5h
+            add cx, 5h
             int 10h
-            add dx, 5h
-            int 10h
+            add dx, 0Ah
+            int 10h            
             sub cx, 0Ah
-            mov dx, dx
-            int 10
-            sub dx, 5h
             int 10h
-            
 
 
             SKIP_INVADER:
@@ -481,7 +507,6 @@ B_EXIT_CHECK_COLLISIONS:
             mov [bx], 0
             dec bulletsRN
 
-            lea bx, score
             
 
         NEXT:
